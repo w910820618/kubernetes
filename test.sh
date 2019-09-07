@@ -30,8 +30,14 @@ else
   echo "docker has been installed"
 fi
 
+yum install openssl
+
 #关闭
 swapoff -a
+
+systemctl stop firewalld
+
+systemctl disable firewalld
 
 #安装k8s
 if ! [ -x "$(command -v kubectl)" ]; then
@@ -63,50 +69,15 @@ else
 	echo "kubectl has been installed"
 fi
 
-#初始化环境
-kubeadm init --pod-network-cidr=10.244.0.0/16 
-
-mkdir -p /etc/cni/net.d
-cat >/etc/cni/net.d/10-mynet.conf <<-EOF
-{
-    "cniVersion": "0.3.0",
-    "name": "mynet",
-    "type": "bridge",
-    "bridge": "cni0",
-    "isGateway": true,
-    "ipMasq": true,
-    "ipam": {
-        "type": "host-local",
-        "subnet": "10.244.0.0/16",
-        "routes": [
-            {"dst": "0.0.0.0/0"}
-        ]
-    }
-}
-EOF
-cat >/etc/cni/net.d/99-loopback.conf <<-EOF
-{
-    "cniVersion": "0.3.0",
-    "type": "loopback"
-}
-EOF
-
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/kube-flannel.yml
-
-ysctl net.bridge.bridge-nf-call-iptables=1
-kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-
-kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
-kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml 
-
-kubectl get pods -n kube-system
-
 #安装git
 if ! [ -x "$(command -v git)" ]; then
 	yum install git
 else
 	echo "git has been installed"
 fi
+
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
 
 #判断是master还是node
 echo "Is the server master or node :"
@@ -119,12 +90,38 @@ done
 
 #如何是master
 if [[ "$answer" = "master" ]]; then
-	
+    echo "your ip:"
+    read serverip
+    sudo kubeadm init --kubernetes-version=v1.11.2 --apiserver-advertise-address="$serverip" --pod-network-cidr=192.168.0.0/16
+
+	git clone https://github.com/w910820618/kubernetes.git
+    #生成token
+    kubeadm token create
+    #生成ssh
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex |
+
+    git clone https://github.com/w910820618/kubernetes.git
+
+    kubectl apply -f kube-flannel.yaml
+
+    kubectl apply -f rbac-kdd.yaml
+
+    kubectl apply -f calico.yaml
+
+    kubectl create -f kubernetes-dashboard.yaml
+
+    kubectl create -f admin-token.yaml
 fi
 
 #如果是node
 if [[ "$answer" = "node" ]]; then
-	#statements
+	echo "Master IP:"
+    read masterip
+    echo "Master token:"
+    read token
+    echo "ssh:"
+    read ssh
+    kubeadm join "$masterip":6443 --token "$token" --discovery-token-ca-cert-hash "$ssh"
 fi
 
 
