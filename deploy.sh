@@ -69,6 +69,10 @@ else
 	echo "kubectl has been installed"
 fi
 
+systemctl enable kubelet
+systemctl enable kubeadm
+systemctl enable kubectl
+
 #安装git
 if ! [ -x "$(command -v git)" ]; then
 	yum install git
@@ -103,6 +107,10 @@ if [[ "$answer" = "master" ]]; then
     kubectl create -f kubernetes-dashboard.yaml
 
     kubectl create -f admin-token.yaml
+
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+
+    source ~/.bash_profile
 fi
 
 #如果是node
@@ -113,7 +121,7 @@ if [[ "$answer" = "node" ]]; then
     read token
     echo "ssh:"
     read ssh
-    kubeadm join "$masterip":6443 --token "$token" --discovery-token-ca-cert-hash "$ssh"
+    kubeadm join "$masterip":6443 --token="$token" --discovery-token-ca-cert-hash "$ssh"
 fi
 
 
