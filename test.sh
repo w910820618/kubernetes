@@ -76,17 +76,12 @@ else
 	echo "git has been installed"
 fi
 
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
+modprobe br_netfilter
+sysctl -p
 
 #判断是master还是node
 echo "Is the server master or node :"
 read answer
-
-while [ [ "$answer" = "master" ] || [ "$answer" = "node" ] ];do
-	echo "Input errors,please re-enter:"
-	read answer
-done
 
 #如何是master
 if [[ "$answer" = "master" ]]; then
@@ -94,13 +89,10 @@ if [[ "$answer" = "master" ]]; then
     read serverip
     sudo kubeadm init --kubernetes-version=v1.11.2 --apiserver-advertise-address="$serverip" --pod-network-cidr=192.168.0.0/16
 
-	git clone https://github.com/w910820618/kubernetes.git
     #生成token
     kubeadm token create
     #生成ssh
     openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex |
-
-    git clone https://github.com/w910820618/kubernetes.git
 
     kubectl apply -f kube-flannel.yaml
 
