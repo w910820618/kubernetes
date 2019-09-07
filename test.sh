@@ -87,7 +87,7 @@ read answer
 if [[ "$answer" = "master" ]]; then
     echo "your ip:"
     read serverip
-    sudo kubeadm init --kubernetes-version=v1.13.0 --apiserver-advertise-address="$serverip" --pod-network-cidr=192.168.0.0/16
+    sudo kubeadm init --kubernetes-version=v1.14.2 --apiserver-advertise-address="$serverip" --pod-network-cidr=192.168.0.0/16
     #生成token
     kubeadm token create
     #生成ssh
@@ -95,7 +95,7 @@ if [[ "$answer" = "master" ]]; then
 
     kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/kube-flannel.yml
 
-    kkubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+    kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
     kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 
     kubectl create -f kubernetes-dashboard.yaml
