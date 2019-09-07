@@ -76,12 +76,14 @@ else
 	echo "git has been installed"
 fi
 
-modprobe br_netfilter
-sysctl -p
+echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables
+echo 1 > /proc/sys/net/bridge/bridge-nf-call-ip6tables
 
 #判断是master还是node
 echo "Is the server master or node :"
 read answer
+
+
 
 #如何是master
 if [[ "$answer" = "master" ]]; then
